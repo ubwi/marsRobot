@@ -55,9 +55,7 @@
 		});
 
 		function RobotWorks(_initMaxSize, _lostLocation, _changedLocation, _myModel, _resultOutput) {
-			if (!(_myModel.initLocation in _lostLocation)) {
-				robotMove(_initMaxSize, _myModel, _resultOutput, _changedLocation, _lostLocation);
-			}
+			robotMove(_initMaxSize, _myModel, _resultOutput, _changedLocation, _lostLocation);
 		}
 
 		function robotMove(_initMaxSize, _myModel, _resultOutput, _changedLocation,  _lostLocation) {
