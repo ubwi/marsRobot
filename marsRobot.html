@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html ng-app='myRobotApp'>
+<head>
+	<title>Mars Robot</title>
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
+</head>
+<body ng-controller="RobotController">
+	<p>INPUT</p>
+	<form>
+		InitMaxSize X: <input ng-model='initMaxSize.initMaxSizeX' maxlength="2" max='50' />
+		InitMaxSize Y: <input ng-model='initMaxSize.initMaxSizeY' maxlength="2" max='50' />
+		<button ng-click="startMovingRobot()">start</button><br />
+		{{initMaxSize.initMaxSizeX}} {{initMaxSize.initMaxSizeY}}
+	</form>
+	
+	<div ng-repeat='item in myModel'>
+		<span>{{item.initLocation}}</span><br />
+		<span>{{item.movement}}</span><br />
+	</div>
+	<p>OUTPUT</p>
+	<div ng-repeat='outputItem in resultOutput'>
+		<span>{{outputItem}}</span>
+	</div>
+	<script>
+		var myAppModule = angular.module('myRobotApp', []);
+		myAppModule.controller('RobotController', function($scope) {
+			var initMaxSize = { 
+					initMaxSizeX: 5,
+					initMaxSizeY: 3 
+				};
+			var lostLocation = [];
+			var changedLocation = {
+				xLoc: '',
+				yLoc: '',
+				direction: ''
+			}
+			var resultOutput = [];
+			var myModel = [
+				{initLocation: '1 1 E', movement: 'RFRFRFRF'}, 
+				{initLocation: '3 2 N', movement: 'FRRFLLFFRRFLL'}, 
+				{initLocation: '0 3 W', movement: 'LLFFFLFLFL'}
+			];
+			
+			$scope.initMaxSize = initMaxSize;
+			$scope.lostLocation = lostLocation; 
+			$scope.changedLocation = changedLocation; 
+			$scope.resultOutput = resultOutput;
+			$scope.myModel = myModel;
+			
+			$scope.startMovingRobot = function() {
+				if($scope.initMaxSize.initMaxSizeX <=50 && $scope.initMaxSize.initMaxSizeY <= 50) {
+					new RobotWorks(initMaxSize, lostLocation, changedLocation, myModel, resultOutput);
+				}
+			};
+		});
+
+		function RobotWorks(_initMaxSize, _lostLocation, _changedLocation, _myModel, _resultOutput) {
+			if (!(_myModel.initLocation in _lostLocation)) {
+				robotMove(_initMaxSize, _myModel, _resultOutput, _changedLocation, _lostLocation);
+			}
+		}
+
+		function robotMove(_initMaxSize, _myModel, _resultOutput, _changedLocation,  _lostLocation) {
+			
+			for (var i = 0; i < _myModel.length; i++) {
+				_changedLocation.xLoc = _myModel[i].initLocation.slice(0, 1);
+				_changedLocation.yLoc = _myModel[i].initLocation.slice(2, 3);
+				_changedLocation.direction = _myModel[i].initLocation.slice(4, 5);
+				var recievedOrder = [];
+				var result = '';
+				var checkLostLocation = 'isNotLostLocation';
+
+				for (var m = 0; m < _lostLocation.length; m++) {
+					if (_myModel[i].initLocation.slice(0, 1) === _lostLocation[m].substring(0,1) && 
+						_myModel[i].initLocation.slice(2, 3) === _lostLocation[m].substring(2,3) && 
+						_myModel[i].initLocation.slice(4, 5) === _lostLocation[m].substring(4,5)) {
+							checkLostLocation = 'isLostLocation';
+							alert(
+								_myModel[i].initLocation.slice(0, 1) + ' ' + 
+								_myModel[i].initLocation.slice(2, 3) + ' ' + 
+								_myModel[i].initLocation.slice(4, 5) + 
+								' is a lostLocation!!!!');
+					}
+				}
+
+				if ('isLostLocation' == checkLostLocation) {
+					break;
+				}
+				
+				for (var j = 0; j < _myModel[i].movement.length; j++) {
+					recievedOrder[j] = _myModel[i].movement.substring(j, j+1);
+				}
+				for (var k = 0; k < recievedOrder.length; k++) {
+					if ('F' != recievedOrder[k]) {
+						_changedLocation.direction = turnDirection(_changedLocation.direction, recievedOrder[k]);
+						console.log('model'+i+" : "+_changedLocation.direction);
+					} else {
+						//console.log("myModel[i].initLocation.slice(2, 3)"+myModel[i].initLocation.slice(2, 3));
+						console.log("_changedLocation.yLoc"+_changedLocation.yLoc);
+						result = calculateLocation(_initMaxSize, _resultOutput, _changedLocation, _lostLocation);
+						if ('LOST' == result) {
+							break;
+						} 
+					}
+				}
+				if('LOST' != result) {
+					_resultOutput.push(_changedLocation.xLoc + ' ' + _changedLocation.yLoc + ' ' + _changedLocation.direction);
+				}
+				
+			}
+		}
+
+		function turnDirection(_direction, _directionOrder) {
+			var direction = _direction;
+			if ('L' === _directionOrder) {
+				if ('N' === direction) {
+					direction = 'W';
+				} else if ('S' === direction) {
+					direction = 'E';
+				} else if ('E' === direction) {
+					direction = 'N';
+				} else if ('W' === direction) {
+					direction = 'S';
+				}
+			} else {
+				if ('N' === direction) {
+					direction = 'E';
+				} else if ('S' === direction) {
+					direction = 'W';
+				} else if ('E' === direction) {
+					direction = 'S';
+				} else if ('W' === direction) {
+					direction = 'N';
+				}
+			}
+			return direction;
+		}
+
+		function calculateLocation(_initMaxSize, _resultOutput, _changedLocation, _lostLocation) {
+			var returnValue = '';
+			
+			if ('N' === _changedLocation.direction) {
+				_changedLocation.yLoc++;
+			} else if ('S' === _changedLocation.direction) {
+				_changedLocation.yLoc--;
+			} else if ('E' === _changedLocation.direction) {
+				_changedLocation.xLoc++;
+			} else if ('W' === _changedLocation.direction) {
+				_changedLocation.xLoc--;
+			}
+
+			if (_changedLocation.xLoc < 0 || _changedLocation.xLoc > _initMaxSize.initMaxSizeX || _changedLocation.yLoc < 0 || _changedLocation.yLoc > _initMaxSize.initMaxSizeY) {
+				returnValue = 'LOST';
+			}
+
+			if (_changedLocation.xLoc < 0 ) {
+				returnValue = 'LOST';
+				_resultOutput.push((_changedLocation.xLoc+1) + ' ' + _changedLocation.yLoc + ' ' + _changedLocation.direction + ' ' + returnValue);
+				_lostLocation.push((_changedLocation.xLoc+1) + ' ' + _changedLocation.yLoc + ' ' + _changedLocation.direction + ' ' + returnValue);
+			}
+			if (_changedLocation.xLoc > _initMaxSize.initMaxSizeX) {
+				returnValue = 'LOST';
+				_resultOutput.push((_changedLocation.xLoc-1) + ' ' + _changedLocation.yLoc + ' ' + _changedLocation.direction + ' ' + returnValue);
+				_lostLocation.push((_changedLocation.xLoc-1) + ' ' + _changedLocation.yLoc + ' ' + _changedLocation.direction + ' ' + returnValue);
+			}
+			if (_changedLocation.yLoc < 0) {
+				returnValue = 'LOST';
+				_resultOutput.push(_changedLocation.xLoc + ' ' + (_changedLocation.yLoc+1) + ' ' + _changedLocation.direction + ' ' + returnValue);
+				_lostLocation.push(_changedLocation.xLoc + ' ' + (_changedLocation.yLoc+1) + ' ' + _changedLocation.direction + ' ' + returnValue);
+			}
+			if (_changedLocation.yLoc > _initMaxSize.initMaxSizeY) {
+				returnValue = 'LOST';
+				_resultOutput.push(_changedLocation.xLoc + ' ' + (_changedLocation.yLoc-1) + ' ' + _changedLocation.direction + ' ' + returnValue);
+				_lostLocation.push(_changedLocation.xLoc + ' ' + (_changedLocation.yLoc-1) + ' ' + _changedLocation.direction + ' ' + returnValue);
+			}
+			return returnValue;
+		}
+	</script>
+</body>
+</html>
